@@ -1,38 +1,54 @@
-# sv
+# Data Stream Assessment
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+A modern, full-stack web application built with **SvelteKit**, featuring comprehensive testing, code quality tools, and a robust development workflow.
 
-## Creating a project
+## 📦 Installation
 
-If you're seeing this, you've probably already done this step. Congrats!
+```bash
+# Clone the repository
+git clone <your-repo-url>
+cd dataStreamAssessment
 
-```sh
-# create a new project in the current directory
-npx sv create
+# Install dependencies
+npm install
 
-# create a new project in my-app
-npx sv create my-app
-```
-
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```sh
+# Start development server
 npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
 ```
 
-## Building
+## 🚀 Development
 
-To create a production version of your app:
+### Start Development Server
 
-```sh
-npm run build
+```bash
+npm run dev
 ```
 
-You can preview the production build with `npm run preview`.
+The app will be available at **http://localhost:5180**
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+### Available Scripts
+
+#### Development
+
+- `npm run dev` - Start development server (port 5180)
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
+
+#### Testing
+
+- `npm run test` - Run all tests once
+- `npm run test:watch` - Run tests in watch mode
+- `npm run test:coverage` - Run tests with coverage report
+- `npm run test:ui` - Run tests with interactive UI
+
+#### Code Quality
+
+- `npm run lint` - Check code quality
+- `npm run lint:fix` - Auto-fix linting issues
+- `npm run format` - Format code with Prettier
+- `npm run quality-check` - Build, lint, and test everything
+
+#### Type Checking
+
+- `npm run check` - Type check with Svelte
+- `npm run check:watch` - Watch mode type checking
