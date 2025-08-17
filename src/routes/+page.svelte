@@ -33,16 +33,12 @@
 		hasData && columns.includes('CharacteristicName')
 			? [
 					...new Set(
-						csvData
-							.map((row) => {
-								const charIndex = columns.indexOf('CharacteristicName');
-								const characteristicName = charIndex >= 0 ? row[charIndex] : '';
-								const key = `${Math.random().toString(36).substr(2, 20)}`;
-								return { name: characteristicName, key };
-							})
-							.filter((char) => char.name.trim())
+						csvData.map((row) => {
+							const charIndex = columns.indexOf('CharacteristicName');
+							return charIndex >= 0 ? row[charIndex] : '';
+						})
 					)
-				].sort((a, b) => a.name.localeCompare(b.name))
+				].sort()
 			: [];
 
 	function handleDataLoaded(event: CustomEvent<{ columns: string[]; data: string[][] }>) {
@@ -118,8 +114,8 @@
 							class="w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none"
 						>
 							<option value="">Select a Characteristic Name</option>
-							{#each characteristicNames as char (char.key)}
-								<option value={char.name}>{char.name}</option>
+							{#each characteristicNames as char (char)}
+								<option value={char}>{char}</option>
 							{/each}
 						</select>
 					</div>
