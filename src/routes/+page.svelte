@@ -6,6 +6,7 @@
 	let hasData = false;
 	let selectedLocationId = '';
 	let selectedLocationName = '';
+	let selectedCharacteristicName = '';
 
 	// Extract unique values for dropdowns
 	$: locations =
@@ -28,12 +29,29 @@
 				].sort((a, b) => a.name.localeCompare(b.name))
 			: [];
 
+	$: characteristicNames =
+		hasData && columns.includes('CharacteristicName')
+			? [
+					...new Set(
+						csvData
+							.map((row) => {
+								const charIndex = columns.indexOf('CharacteristicName');
+								const characteristicName = charIndex >= 0 ? row[charIndex] : '';
+								const key = `${Math.random().toString(36).substr(2, 20)}`;
+								return { name: characteristicName, key };
+							})
+							.filter((char) => char.name.trim())
+					)
+				].sort((a, b) => a.name.localeCompare(b.name))
+			: [];
+
 	function handleDataLoaded(event: CustomEvent<{ columns: string[]; data: string[][] }>) {
 		columns = event.detail.columns;
 		csvData = event.detail.data;
 		hasData = true;
 		selectedLocationId = '';
 		selectedLocationName = '';
+		selectedCharacteristicName = '';
 	}
 
 	function handleLocationIdChange(event: Event) {
@@ -41,6 +59,11 @@
 		selectedLocationId = target.value;
 		const location = locations.find((location) => location.id === selectedLocationId);
 		selectedLocationName = location?.name || '';
+	}
+
+	function handleCharacteristicNameChange(event: Event) {
+		const target = event.target as HTMLSelectElement;
+		selectedCharacteristicName = target.value;
 	}
 </script>
 
@@ -82,6 +105,24 @@
 							{/each}
 						</select>
 					</div>
+
+					<!-- Characteristic Name Dropdown -->
+					<div class="space-y-2">
+						<label for="characteristicName" class="block text-sm font-medium text-gray-700">
+							Characteristic Name
+						</label>
+						<select
+							id="characteristicName"
+							bind:value={selectedCharacteristicName}
+							onchange={handleCharacteristicNameChange}
+							class="w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none"
+						>
+							<option value="">Select a Characteristic Name</option>
+							{#each characteristicNames as char (char.key)}
+								<option value={char.name}>{char.name}</option>
+							{/each}
+						</select>
+					</div>
 				</div>
 
 				<!-- Selection Summary -->
@@ -94,6 +135,11 @@
 									Location ID: <span class="font-mono"
 										>{selectedLocationId} : {selectedLocationName}</span
 									>
+								</div>
+							{/if}
+							{#if selectedCharacteristicName}
+								<div>
+									Characteristic Name: <span class="font-mono">{selectedCharacteristicName}</span>
 								</div>
 							{/if}
 						</div>
