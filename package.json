@@ -62,5 +62,8 @@
 		"*.{json,md,css,html}": [
 			"prettier --write"
 		]
+	},
+	"dependencies": {
+		"lucide-svelte": "^0.539.0"
 	}
 }
