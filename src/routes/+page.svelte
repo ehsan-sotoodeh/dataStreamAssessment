@@ -26,8 +26,6 @@
 				)
 			: {};
 
-	console.log('locationNameIdMap', locationNameIdMap);
-
 	$: characteristicNames =
 		hasData && columns.includes('CharacteristicName')
 			? [
@@ -39,6 +37,50 @@
 					)
 				].sort()
 			: [];
+
+	// Calculate average ResultValue for selected location and characteristic
+	$: averageResultValue = (() => {
+		if (!hasData || !selectedLocationId || !selectedCharacteristicName) {
+			return null;
+		}
+
+		const locationIdIndex = columns.indexOf('MonitoringLocationID');
+		const characteristicIndex = columns.indexOf('CharacteristicName');
+		const resultValueIndex = columns.indexOf('ResultValue');
+
+		if (locationIdIndex === -1 || characteristicIndex === -1 || resultValueIndex === -1) {
+			return null;
+		}
+
+		// Filter rows that match both the selected location and characteristic
+		const matchingRows = csvData.filter((row) => {
+			const locationId = row[locationIdIndex];
+			const characteristic = row[characteristicIndex];
+			const resultValue = row[resultValueIndex];
+
+			return (
+				locationId === selectedLocationId &&
+				characteristic === selectedCharacteristicName &&
+				resultValue &&
+				!isNaN(parseFloat(resultValue))
+			);
+		});
+
+		if (matchingRows.length === 0) {
+			return null;
+		}
+
+		// Calculate average of ResultValue
+		const sum = matchingRows.reduce((acc, row) => {
+			return acc + parseFloat(row[resultValueIndex]);
+		}, 0);
+
+		return {
+			average: sum / matchingRows.length,
+			count: matchingRows.length,
+			unit: matchingRows[0][columns.indexOf('ResultUnit')] || 'N/A'
+		};
+	})();
 
 	function handleDataLoaded(event: CustomEvent<{ columns: string[]; data: string[][] }>) {
 		columns = event.detail.columns;
@@ -136,6 +178,32 @@
 									Characteristic Name: <span class="font-mono">{selectedCharacteristicName}</span>
 								</div>
 							{/if}
+						</div>
+					</div>
+				{/if}
+
+				<!-- Average Result Value Display -->
+				{#if averageResultValue}
+					<div class="mt-4 rounded-lg border border-green-200 bg-green-50 p-4">
+						<h3 class="mb-2 font-medium text-green-900">Analysis Results:</h3>
+						<div class="space-y-2 text-sm text-green-800">
+							<div class="text-lg font-semibold">
+								Average {selectedCharacteristicName}:
+								<span class="font-mono text-green-900">
+									{averageResultValue.average.toFixed(2)}
+									{averageResultValue.unit}
+								</span>
+							</div>
+							<div>
+								Based on <span class="font-mono">{averageResultValue.count}</span> measurements
+							</div>
+						</div>
+					</div>
+				{:else if selectedLocationId && selectedCharacteristicName}
+					<div class="mt-4 rounded-lg border border-yellow-200 bg-yellow-50 p-4">
+						<div class="text-sm text-yellow-800">
+							No numeric ResultValue data found for the selected location and characteristic
+							combination.
 						</div>
 					</div>
 				{/if}
