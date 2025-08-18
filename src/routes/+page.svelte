@@ -1,5 +1,6 @@
 <script lang="ts">
 	import FileUpload from '$lib/components/FileUpload.svelte';
+	import { onMount } from 'svelte';
 
 	let csvData: string[][] = [];
 	let columns: string[] = [];
@@ -7,6 +8,9 @@
 	let selectedLocationId = '';
 	let selectedLocationName = '';
 	let selectedCharacteristicName = '';
+	let mapContainer: HTMLDivElement;
+	import type { Map as LeafletMap } from 'leaflet';
+	let map: LeafletMap | null = null;
 
 	// Extract unique values for dropdowns
 	$: locationNameIdMap =
@@ -37,6 +41,44 @@
 					)
 				].sort()
 			: [];
+
+	// Extract unique monitoring locations for map
+	$: monitoringLocations = (() => {
+		if (
+			!hasData ||
+			!columns.includes('MonitoringLocationID') ||
+			!columns.includes('MonitoringLocationLatitude') ||
+			!columns.includes('MonitoringLocationLongitude')
+		) {
+			return [];
+		}
+
+		const idIndex = columns.indexOf('MonitoringLocationID');
+		const nameIndex = columns.indexOf('MonitoringLocationName');
+		const latIndex = columns.indexOf('MonitoringLocationLatitude');
+		const lngIndex = columns.indexOf('MonitoringLocationLongitude');
+
+		const uniqueLocations: Record<string, { id: string; name: string; lat: number; lng: number }> =
+			{};
+
+		csvData.forEach((row) => {
+			const id = row[idIndex];
+			const name = row[nameIndex];
+			const lat = parseFloat(row[latIndex]);
+			const lng = parseFloat(row[lngIndex]);
+
+			if (id && !isNaN(lat) && !isNaN(lng) && !uniqueLocations[id]) {
+				uniqueLocations[id] = {
+					id,
+					name: name || id,
+					lat,
+					lng
+				};
+			}
+		});
+
+		return Object.values(uniqueLocations);
+	})();
 
 	// Calculate average ResultValue for selected location and characteristic
 	$: averageResultValue = (() => {
@@ -81,6 +123,60 @@
 			unit: matchingRows[0][columns.indexOf('ResultUnit')] || 'N/A'
 		};
 	})();
+
+	// Initialize Leaflet map
+	async function initializeMap() {
+		if (!mapContainer || monitoringLocations.length === 0) return;
+
+		// Dynamically import Leaflet
+		const L = await import('leaflet');
+
+		// Create map
+		map = L.map(mapContainer).setView([49.0, -53.9], 10);
+
+		// Add OpenStreetMap tiles
+		L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+			attribution: '© OpenStreetMap contributors'
+		}).addTo(map);
+
+		// Add markers for each monitoring location
+		monitoringLocations.forEach((location) => {
+			const marker = L.marker([location.lat, location.lng]).addTo(map).bindPopup(`
+					<strong>${location.name}</strong><br>
+					ID: ${location.id}<br>
+					Lat: ${location.lat.toFixed(5)}<br>
+					Lng: ${location.lng.toFixed(5)}
+				`);
+
+			// Add click event to set selected location
+			marker.on('click', () => {
+				selectedLocationId = location.id;
+				selectedLocationName = location.name;
+			});
+		});
+
+		// Fit map to show all markers
+		if (monitoringLocations.length > 0) {
+			const bounds = L.latLngBounds(monitoringLocations.map((loc) => L.latLng(loc.lat, loc.lng)));
+			map.fitBounds(bounds.pad(0.1));
+		}
+	}
+
+	// Watch for changes in monitoring locations and reinitialize map
+	$: if (monitoringLocations.length > 0 && mapContainer) {
+		// Small delay to ensure DOM is ready
+		setTimeout(initializeMap, 100);
+	}
+
+	onMount(() => {
+		// Import Leaflet CSS
+		const link = document.createElement('link');
+		link.rel = 'stylesheet';
+		link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+		link.integrity = 'sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=';
+		link.crossOrigin = '';
+		document.head.appendChild(link);
+	});
 
 	function handleDataLoaded(event: CustomEvent<{ columns: string[]; data: string[][] }>) {
 		columns = event.detail.columns;
@@ -423,6 +519,22 @@
 									</p>
 								</div>
 							</div>
+						</div>
+					{/if}
+
+					<!-- Map Section -->
+					{#if monitoringLocations.length > 0}
+						<div class="mb-6 rounded-xl border border-gray-200 bg-white p-6 shadow-lg">
+							<h3 class="mb-4 text-xl font-bold text-gray-900">Monitoring Locations Map</h3>
+							<div
+								bind:this={mapContainer}
+								class="w-full rounded-lg border border-gray-300"
+								style="height: 400px; min-height: 400px;"
+							></div>
+							<p class="mt-2 text-sm text-gray-600">
+								Showing {monitoringLocations.length} unique monitoring locations. Click any marker to
+								select that location.
+							</p>
 						</div>
 					{/if}
 				{:else}

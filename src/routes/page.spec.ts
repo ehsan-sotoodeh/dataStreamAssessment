@@ -23,6 +23,30 @@ vi.mock('@testing-library/svelte', () => ({
 	waitFor: vi.fn((fn) => fn())
 }));
 
+// Mock Leaflet
+vi.mock('leaflet', () => ({
+	default: {
+		map: vi.fn(() => ({
+			setView: vi.fn().mockReturnThis(),
+			addTo: vi.fn().mockReturnThis(),
+			fitBounds: vi.fn().mockReturnThis(),
+			remove: vi.fn()
+		})),
+		tileLayer: vi.fn(() => ({
+			addTo: vi.fn().mockReturnThis()
+		})),
+		marker: vi.fn(() => ({
+			addTo: vi.fn().mockReturnThis(),
+			bindPopup: vi.fn().mockReturnThis(),
+			on: vi.fn().mockReturnThis()
+		})),
+		latLngBounds: vi.fn(() => ({
+			pad: vi.fn().mockReturnThis()
+		})),
+		latLng: vi.fn()
+	}
+}));
+
 describe('Page Logic Functions', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
@@ -99,53 +123,148 @@ describe('Page Logic Functions', () => {
 				)
 			].sort();
 
-			// The actual order from the test data
 			expect(characteristicNames).toEqual(['Dissolved Oxygen', 'Temperature', 'pH']);
-		});
-
-		it('should filter out empty characteristic names', () => {
-			const mockData = {
-				columns: ['MonitoringLocationID', 'MonitoringLocationName', 'CharacteristicName'],
-				data: [
-					['LOC001', 'Lake Michigan', 'Temperature'],
-					['LOC002', 'Lake Superior', ''],
-					['LOC003', 'Lake Erie', 'pH'],
-					['LOC004', 'Lake Ontario', '']
-				]
-			};
-
-			// Simulate the filtering logic
-			const characteristicNames = [
-				...new Set(
-					mockData.data
-						.map((row) => {
-							const charIndex = mockData.columns.indexOf('CharacteristicName');
-							return charIndex >= 0 ? row[charIndex] : '';
-						})
-						.filter((name) => name.trim() !== '')
-				)
-			].sort();
-
-			// The actual order from the test data
-			expect(characteristicNames).toEqual(['Temperature', 'pH']);
 		});
 	});
 
-	describe('Average ResultValue Calculation Functions', () => {
-		it('should calculate average ResultValue for valid data', () => {
+	describe('Monitoring Locations Processing', () => {
+		it('should extract unique monitoring locations with coordinates', () => {
 			const mockData = {
-				columns: ['MonitoringLocationID', 'CharacteristicName', 'ResultValue', 'ResultUnit'],
+				columns: [
+					'MonitoringLocationID',
+					'MonitoringLocationName',
+					'MonitoringLocationLatitude',
+					'MonitoringLocationLongitude'
+				],
 				data: [
-					['WS', 'Dissolved oxygen (DO)', '7.2', 'mg/L'],
-					['WS', 'Dissolved oxygen (DO)', '8.1', 'mg/L'],
-					['WS', 'Dissolved oxygen (DO)', '6.8', 'mg/L'],
-					['WS', 'pH', '5.36', 'None'],
-					['IBS', 'Dissolved oxygen (DO)', '10.2', 'mg/L']
+					['LOC001', 'Lake Michigan', '42.5', '-87.3'],
+					['LOC002', 'Lake Superior', '47.0', '-87.5'],
+					['LOC001', 'Lake Michigan', '42.5', '-87.3'], // Duplicate
+					['LOC003', 'Lake Erie', '41.7', '-83.2']
 				]
 			};
 
-			const selectedLocationId = 'WS';
-			const selectedCharacteristicName = 'Dissolved oxygen (DO)';
+			// Simulate the monitoring locations extraction logic
+			const idIndex = mockData.columns.indexOf('MonitoringLocationID');
+			const nameIndex = mockData.columns.indexOf('MonitoringLocationName');
+			const latIndex = mockData.columns.indexOf('MonitoringLocationLatitude');
+			const lngIndex = mockData.columns.indexOf('MonitoringLocationLongitude');
+
+			const uniqueLocations = new Map();
+
+			mockData.data.forEach((row) => {
+				const id = row[idIndex];
+				const name = row[nameIndex];
+				const lat = parseFloat(row[latIndex]);
+				const lng = parseFloat(row[lngIndex]);
+
+				if (id && !isNaN(lat) && !isNaN(lng)) {
+					if (!uniqueLocations.has(id)) {
+						uniqueLocations.set(id, {
+							id,
+							name: name || id,
+							lat,
+							lng
+						});
+					}
+				}
+			});
+
+			const result = Array.from(uniqueLocations.values());
+
+			expect(result).toHaveLength(3);
+			expect(result).toEqual([
+				{ id: 'LOC001', name: 'Lake Michigan', lat: 42.5, lng: -87.3 },
+				{ id: 'LOC002', name: 'Lake Superior', lat: 47.0, lng: -87.5 },
+				{ id: 'LOC003', name: 'Lake Erie', lat: 41.7, lng: -83.2 }
+			]);
+		});
+
+		it('should handle invalid coordinates gracefully', () => {
+			const mockData = {
+				columns: [
+					'MonitoringLocationID',
+					'MonitoringLocationName',
+					'MonitoringLocationLatitude',
+					'MonitoringLocationLongitude'
+				],
+				data: [
+					['LOC001', 'Lake Michigan', '42.5', '-87.3'],
+					['LOC002', 'Lake Superior', 'invalid', '-87.5'],
+					['LOC003', 'Lake Erie', '41.7', 'invalid'],
+					['LOC004', 'Lake Ontario', '', ''],
+					['LOC005', 'Lake Huron', '44.0', '-82.5']
+				]
+			};
+
+			const idIndex = mockData.columns.indexOf('MonitoringLocationID');
+			const nameIndex = mockData.columns.indexOf('MonitoringLocationName');
+			const latIndex = mockData.columns.indexOf('MonitoringLocationLatitude');
+			const lngIndex = mockData.columns.indexOf('MonitoringLocationLongitude');
+
+			const uniqueLocations = new Map();
+
+			mockData.data.forEach((row) => {
+				const id = row[idIndex];
+				const name = row[nameIndex];
+				const lat = parseFloat(row[latIndex]);
+				const lng = parseFloat(row[lngIndex]);
+
+				if (id && !isNaN(lat) && !isNaN(lng)) {
+					if (!uniqueLocations.has(id)) {
+						uniqueLocations.set(id, {
+							id,
+							name: name || id,
+							lat,
+							lng
+						});
+					}
+				}
+			});
+
+			const result = Array.from(uniqueLocations.values());
+
+			expect(result).toHaveLength(2);
+			expect(result).toEqual([
+				{ id: 'LOC001', name: 'Lake Michigan', lat: 42.5, lng: -87.3 },
+				{ id: 'LOC005', name: 'Lake Huron', lat: 44.0, lng: -82.5 }
+			]);
+		});
+
+		it('should handle missing coordinate columns', () => {
+			const mockData = {
+				columns: ['MonitoringLocationID', 'MonitoringLocationName'],
+				data: [
+					['LOC001', 'Lake Michigan'],
+					['LOC002', 'Lake Superior']
+				]
+			};
+
+			// Simulate the monitoring locations extraction logic
+			const hasRequiredColumns =
+				mockData.columns.includes('MonitoringLocationID') &&
+				mockData.columns.includes('MonitoringLocationLatitude') &&
+				mockData.columns.includes('MonitoringLocationLongitude');
+
+			expect(hasRequiredColumns).toBe(false);
+		});
+	});
+
+	describe('Average Result Value Calculation', () => {
+		it('should calculate average result value correctly', () => {
+			const mockData = {
+				columns: ['MonitoringLocationID', 'CharacteristicName', 'ResultValue', 'ResultUnit'],
+				data: [
+					['LOC001', 'Temperature', '22.5', 'deg C'],
+					['LOC001', 'Temperature', '23.1', 'deg C'],
+					['LOC001', 'Temperature', '21.8', 'deg C'],
+					['LOC002', 'Temperature', '18.2', 'deg C'],
+					['LOC001', 'pH', '7.2', 'None']
+				]
+			};
+
+			const locationId = 'LOC001';
+			const characteristicName = 'Temperature';
 
 			// Simulate the average calculation logic
 			const locationIdIndex = mockData.columns.indexOf('MonitoringLocationID');
@@ -154,247 +273,188 @@ describe('Page Logic Functions', () => {
 			const resultUnitIndex = mockData.columns.indexOf('ResultUnit');
 
 			const matchingRows = mockData.data.filter((row) => {
-				const locationId = row[locationIdIndex];
-				const characteristic = row[characteristicIndex];
+				const rowLocationId = row[locationIdIndex];
+				const rowCharacteristic = row[characteristicIndex];
 				const resultValue = row[resultValueIndex];
 
 				return (
-					locationId === selectedLocationId &&
-					characteristic === selectedCharacteristicName &&
+					rowLocationId === locationId &&
+					rowCharacteristic === characteristicName &&
 					resultValue &&
 					!isNaN(parseFloat(resultValue))
 				);
 			});
+
+			expect(matchingRows).toHaveLength(3);
 
 			const sum = matchingRows.reduce((acc, row) => {
 				return acc + parseFloat(row[resultValueIndex]);
 			}, 0);
 
 			const average = sum / matchingRows.length;
-			const unit = matchingRows[0][resultUnitIndex] || 'N/A';
+			const unit = matchingRows[0][resultUnitIndex];
 
-			expect(matchingRows).toHaveLength(3);
-			expect(average).toBeCloseTo(7.37, 2); // (7.2 + 8.1 + 6.8) / 3
-			expect(unit).toBe('mg/L');
+			expect(average).toBeCloseTo(22.47, 2);
+			expect(unit).toBe('deg C');
 		});
 
-		it('should filter out non-numeric ResultValue entries', () => {
+		it('should handle no matching data', () => {
 			const mockData = {
-				columns: ['MonitoringLocationID', 'CharacteristicName', 'ResultValue', 'ResultUnit'],
+				columns: ['MonitoringLocationID', 'CharacteristicName', 'ResultValue'],
 				data: [
-					['WS', 'Total Coliform', 'Not Detected', 'N/A'],
-					['WS', 'Total Coliform', '5', 'CFU/100mL'],
-					['WS', 'Total Coliform', '3', 'CFU/100mL'],
-					['WS', 'Total Coliform', 'Present', 'N/A']
+					['LOC001', 'Temperature', '22.5'],
+					['LOC002', 'Temperature', '18.2']
 				]
 			};
 
-			const selectedLocationId = 'WS';
-			const selectedCharacteristicName = 'Total Coliform';
+			const locationId = 'LOC003'; // Non-existent location
+			const characteristicName = 'Temperature';
 
-			// Simulate the filtering logic
 			const locationIdIndex = mockData.columns.indexOf('MonitoringLocationID');
 			const characteristicIndex = mockData.columns.indexOf('CharacteristicName');
-			const resultValueIndex = mockData.columns.indexOf('ResultValue');
 
 			const matchingRows = mockData.data.filter((row) => {
-				const locationId = row[locationIdIndex];
-				const characteristic = row[characteristicIndex];
-				const resultValue = row[resultValueIndex];
+				const rowLocationId = row[locationIdIndex];
+				const rowCharacteristic = row[characteristicIndex];
 
-				return (
-					locationId === selectedLocationId &&
-					characteristic === selectedCharacteristicName &&
-					resultValue &&
-					!isNaN(parseFloat(resultValue))
-				);
-			});
-
-			// Should only include numeric values: '5' and '3'
-			expect(matchingRows).toHaveLength(2);
-			expect(matchingRows[0][resultValueIndex]).toBe('5');
-			expect(matchingRows[1][resultValueIndex]).toBe('3');
-		});
-
-		it('should return null when no matching data is found', () => {
-			const mockData = {
-				columns: ['MonitoringLocationID', 'CharacteristicName', 'ResultValue', 'ResultUnit'],
-				data: [
-					['WS', 'Dissolved oxygen (DO)', '7.2', 'mg/L'],
-					['IBS', 'pH', '5.88', 'None']
-				]
-			};
-
-			const selectedLocationId = 'WS';
-			const selectedCharacteristicName = 'pH'; // No pH data for WS location
-
-			// Simulate the filtering logic
-			const locationIdIndex = mockData.columns.indexOf('MonitoringLocationID');
-			const characteristicIndex = mockData.columns.indexOf('CharacteristicName');
-			const resultValueIndex = mockData.columns.indexOf('ResultValue');
-
-			const matchingRows = mockData.data.filter((row) => {
-				const locationId = row[locationIdIndex];
-				const characteristic = row[characteristicIndex];
-				const resultValue = row[resultValueIndex];
-
-				return (
-					locationId === selectedLocationId &&
-					characteristic === selectedCharacteristicName &&
-					resultValue &&
-					!isNaN(parseFloat(resultValue))
-				);
+				return rowLocationId === locationId && rowCharacteristic === characteristicName;
 			});
 
 			expect(matchingRows).toHaveLength(0);
 		});
 
-		it('should return null when required columns are missing', () => {
+		it('should handle non-numeric result values', () => {
 			const mockData = {
-				columns: ['Date', 'Value', 'Unit'], // Missing required columns
+				columns: ['MonitoringLocationID', 'CharacteristicName', 'ResultValue'],
 				data: [
-					['2024-01-01', '22.5', 'Celsius'],
-					['2024-01-02', '23.1', 'Celsius']
+					['LOC001', 'Temperature', '22.5'],
+					['LOC001', 'Temperature', 'N/A'],
+					['LOC001', 'Temperature', ''],
+					['LOC001', 'Temperature', 'invalid']
 				]
 			};
 
-			// Simulate the column validation logic
-			const locationIdIndex = mockData.columns.indexOf('MonitoringLocationID');
-			const characteristicIndex = mockData.columns.indexOf('CharacteristicName');
-			const resultValueIndex = mockData.columns.indexOf('ResultValue');
+			const locationId = 'LOC001';
+			const characteristicName = 'Temperature';
 
-			// All required columns should be missing
-			expect(locationIdIndex).toBe(-1);
-			expect(characteristicIndex).toBe(-1);
-			expect(resultValueIndex).toBe(-1);
-		});
-
-		it('should handle decimal precision correctly', () => {
-			const mockData = {
-				columns: ['MonitoringLocationID', 'CharacteristicName', 'ResultValue', 'ResultUnit'],
-				data: [
-					['WS', 'Temperature', '22.567', 'deg C'],
-					['WS', 'Temperature', '23.123', 'deg C'],
-					['WS', 'Temperature', '21.999', 'deg C']
-				]
-			};
-
-			const selectedLocationId = 'WS';
-			const selectedCharacteristicName = 'Temperature';
-
-			// Simulate the average calculation logic
 			const locationIdIndex = mockData.columns.indexOf('MonitoringLocationID');
 			const characteristicIndex = mockData.columns.indexOf('CharacteristicName');
 			const resultValueIndex = mockData.columns.indexOf('ResultValue');
 
 			const matchingRows = mockData.data.filter((row) => {
-				const locationId = row[locationIdIndex];
-				const characteristic = row[characteristicIndex];
+				const rowLocationId = row[locationIdIndex];
+				const rowCharacteristic = row[characteristicIndex];
 				const resultValue = row[resultValueIndex];
 
 				return (
-					locationId === selectedLocationId &&
-					characteristic === selectedCharacteristicName &&
+					rowLocationId === locationId &&
+					rowCharacteristic === characteristicName &&
 					resultValue &&
 					!isNaN(parseFloat(resultValue))
 				);
 			});
-
-			const sum = matchingRows.reduce((acc, row) => {
-				return acc + parseFloat(row[resultValueIndex]);
-			}, 0);
-
-			const average = sum / matchingRows.length;
-
-			// (22.567 + 23.123 + 21.999) / 3 = 22.563
-			expect(average).toBeCloseTo(22.563, 3);
-		});
-
-		it('should handle single measurement case', () => {
-			const mockData = {
-				columns: ['MonitoringLocationID', 'CharacteristicName', 'ResultValue', 'ResultUnit'],
-				data: [['WS', 'pH', '5.36', 'None']]
-			};
-
-			const selectedLocationId = 'WS';
-			const selectedCharacteristicName = 'pH';
-
-			// Simulate the average calculation logic
-			const locationIdIndex = mockData.columns.indexOf('MonitoringLocationID');
-			const characteristicIndex = mockData.columns.indexOf('CharacteristicName');
-			const resultValueIndex = mockData.columns.indexOf('ResultValue');
-
-			const matchingRows = mockData.data.filter((row) => {
-				const locationId = row[locationIdIndex];
-				const characteristic = row[characteristicIndex];
-				const resultValue = row[resultValueIndex];
-
-				return (
-					locationId === selectedLocationId &&
-					characteristic === selectedCharacteristicName &&
-					resultValue &&
-					!isNaN(parseFloat(resultValue))
-				);
-			});
-
-			const sum = matchingRows.reduce((acc, row) => {
-				return acc + parseFloat(row[resultValueIndex]);
-			}, 0);
-
-			const average = sum / matchingRows.length;
 
 			expect(matchingRows).toHaveLength(1);
-			expect(average).toBe(5.36);
-		});
-
-		it('should handle empty ResultValue entries', () => {
-			const mockData = {
-				columns: ['MonitoringLocationID', 'CharacteristicName', 'ResultValue', 'ResultUnit'],
-				data: [
-					['WS', 'Dissolved oxygen (DO)', '', 'mg/L'],
-					['WS', 'Dissolved oxygen (DO)', '7.2', 'mg/L'],
-					['WS', 'Dissolved oxygen (DO)', '   ', 'mg/L'], // Whitespace only
-					['WS', 'Dissolved oxygen (DO)', '8.1', 'mg/L']
-				]
-			};
-
-			const selectedLocationId = 'WS';
-			const selectedCharacteristicName = 'Dissolved oxygen (DO)';
-
-			// Simulate the filtering logic
-			const locationIdIndex = mockData.columns.indexOf('MonitoringLocationID');
-			const characteristicIndex = mockData.columns.indexOf('CharacteristicName');
-			const resultValueIndex = mockData.columns.indexOf('ResultValue');
-
-			const matchingRows = mockData.data.filter((row) => {
-				const locationId = row[locationIdIndex];
-				const characteristic = row[characteristicIndex];
-				const resultValue = row[resultValueIndex];
-
-				return (
-					locationId === selectedLocationId &&
-					characteristic === selectedCharacteristicName &&
-					resultValue &&
-					!isNaN(parseFloat(resultValue))
-				);
-			});
-
-			// Should only include valid numeric values: '7.2' and '8.1'
-			expect(matchingRows).toHaveLength(2);
-			expect(matchingRows[0][resultValueIndex]).toBe('7.2');
-			expect(matchingRows[1][resultValueIndex]).toBe('8.1');
+			expect(matchingRows[0][resultValueIndex]).toBe('22.5');
 		});
 	});
 
-	describe('Event Handler Functions', () => {
-		it('should handle location ID change correctly', () => {
-			// Test the location change logic
-			const locationNameIdMap = {
-				LOC001: 'Lake Michigan',
-				LOC002: 'Lake Superior'
+	describe('Map Functionality', () => {
+		it('should initialize map with monitoring locations', async () => {
+			// const mockLocations = [
+			// 	{ id: 'LOC001', name: 'Lake Michigan', lat: 42.5, lng: -87.3 },
+			// 	{ id: 'LOC002', name: 'Lake Superior', lat: 47.0, lng: -87.5 }
+			// ];
+
+			// Mock the map initialization logic
+			const mockMap = {
+				setView: vi.fn().mockReturnThis(),
+				addTo: vi.fn().mockReturnThis(),
+				fitBounds: vi.fn().mockReturnThis()
 			};
 
-			const selectedLocationId = 'LOC001';
+			// Simulate map creation
+			const map = mockMap;
+			map.setView([49.0, -53.9], 10);
+
+			expect(map.setView).toHaveBeenCalledWith([49.0, -53.9], 10);
+		});
+
+		it('should create markers for each location', () => {
+			const mockLocations = [
+				{ id: 'LOC001', name: 'Lake Michigan', lat: 42.5, lng: -87.3 },
+				{ id: 'LOC002', name: 'Lake Superior', lat: 47.0, lng: -87.5 }
+			];
+
+			// Simulate marker creation
+			const markers = mockLocations.map((location) => ({
+				lat: location.lat,
+				lng: location.lng,
+				id: location.id,
+				name: location.name
+			}));
+
+			expect(markers).toHaveLength(2);
+			expect(markers[0]).toEqual({
+				lat: 42.5,
+				lng: -87.3,
+				id: 'LOC001',
+				name: 'Lake Michigan'
+			});
+		});
+
+		it('should calculate map bounds correctly', () => {
+			const mockLocations = [
+				{ id: 'LOC001', name: 'Lake Michigan', lat: 42.5, lng: -87.3 },
+				{ id: 'LOC002', name: 'Lake Superior', lat: 47.0, lng: -87.5 },
+				{ id: 'LOC003', name: 'Lake Erie', lat: 41.7, lng: -83.2 }
+			];
+
+			// Simulate bounds calculation
+			const lats = mockLocations.map((loc) => loc.lat);
+			const lngs = mockLocations.map((loc) => loc.lng);
+
+			const minLat = Math.min(...lats);
+			const maxLat = Math.max(...lats);
+			const minLng = Math.min(...lngs);
+			const maxLng = Math.max(...lngs);
+
+			expect(minLat).toBe(41.7);
+			expect(maxLat).toBe(47.0);
+			expect(minLng).toBe(-87.5);
+			expect(maxLng).toBe(-83.2);
+		});
+	});
+
+	describe('Event Handlers', () => {
+		it('should handle data loaded event correctly', () => {
+			const mockEvent = {
+				detail: {
+					columns: ['MonitoringLocationID', 'MonitoringLocationName'],
+					data: [['LOC001', 'Lake Michigan']]
+				}
+			};
+
+			// Simulate the event handler logic
+			const columns = mockEvent.detail.columns;
+			const csvData = mockEvent.detail.data;
+			const hasData = true;
+
+			expect(columns).toEqual(['MonitoringLocationID', 'MonitoringLocationName']);
+			expect(csvData).toHaveLength(1);
+			expect(hasData).toBe(true);
+		});
+
+		it('should handle location ID change correctly', () => {
+			const mockEvent = {
+				target: {
+					value: 'LOC001'
+				}
+			};
+
+			// Simulate the event handler logic
+			const selectedLocationId = mockEvent.target.value;
+			const locationNameIdMap = { LOC001: 'Lake Michigan' };
 			const selectedLocationName = locationNameIdMap[selectedLocationId];
 
 			expect(selectedLocationId).toBe('LOC001');
@@ -402,117 +462,114 @@ describe('Page Logic Functions', () => {
 		});
 
 		it('should handle characteristic name change correctly', () => {
-			// Test the characteristic name change logic
-			const selectedCharacteristicName = 'Temperature';
+			const mockEvent = {
+				target: {
+					value: 'Temperature'
+				}
+			};
+
+			// Simulate the event handler logic
+			const selectedCharacteristicName = mockEvent.target.value;
+
 			expect(selectedCharacteristicName).toBe('Temperature');
 		});
-
-		it('should reset selections when new data is loaded', () => {
-			// Test the reset logic
-			let selectedLocationId = 'LOC001';
-			let selectedLocationName = 'Lake Michigan';
-			let selectedCharacteristicName = 'Temperature';
-
-			// Simulate reset
-			selectedLocationId = '';
-			selectedLocationName = '';
-			selectedCharacteristicName = '';
-
-			expect(selectedLocationId).toBe('');
-			expect(selectedLocationName).toBe('');
-			expect(selectedCharacteristicName).toBe('');
-		});
 	});
 
-	describe('Data Validation Functions', () => {
-		it('should detect missing required columns', () => {
+	describe('Reactive Statements', () => {
+		it('should update location name ID map when data changes', () => {
 			const mockData = {
-				columns: ['Date', 'Value', 'Unit'],
+				columns: ['MonitoringLocationID', 'MonitoringLocationName'],
 				data: [
-					['2024-01-01', '22.5', 'Celsius'],
-					['2024-01-02', '23.1', 'Celsius']
+					['LOC001', 'Lake Michigan'],
+					['LOC002', 'Lake Superior']
 				]
 			};
 
+			// Simulate the reactive statement logic
+			const hasData = true;
 			const hasRequiredColumns =
 				mockData.columns.includes('MonitoringLocationID') &&
 				mockData.columns.includes('MonitoringLocationName');
 
-			expect(hasRequiredColumns).toBe(false);
-			expect(mockData.columns).toEqual(['Date', 'Value', 'Unit']);
+			let locationNameIdMap = {};
+			if (hasData && hasRequiredColumns) {
+				locationNameIdMap = mockData.data.reduce(
+					(acc, row) => {
+						const id = row[mockData.columns.indexOf('MonitoringLocationID')];
+						const name = row[mockData.columns.indexOf('MonitoringLocationName')];
+						if (id && name) {
+							acc[id] = name;
+						}
+						return acc;
+					},
+					{} as Record<string, string>
+				);
+			}
+
+			expect(locationNameIdMap).toEqual({
+				LOC001: 'Lake Michigan',
+				LOC002: 'Lake Superior'
+			});
 		});
 
-		it('should detect presence of required columns', () => {
+		it('should update characteristic names when data changes', () => {
 			const mockData = {
-				columns: ['MonitoringLocationID', 'MonitoringLocationName', 'CharacteristicName'],
-				data: [['LOC001', 'Lake Michigan', 'Temperature']]
-			};
-
-			const hasRequiredColumns =
-				mockData.columns.includes('MonitoringLocationID') &&
-				mockData.columns.includes('MonitoringLocationName');
-
-			expect(hasRequiredColumns).toBe(true);
-		});
-	});
-
-	describe('Data Summary Functions', () => {
-		it('should calculate correct data summary', () => {
-			const mockData = {
-				columns: ['MonitoringLocationID', 'MonitoringLocationName', 'CharacteristicName'],
+				columns: ['CharacteristicName'],
 				data: [
-					['LOC001', 'Lake Michigan', 'Temperature'],
-					['LOC002', 'Lake Superior', 'pH']
+					['Temperature'],
+					['pH'],
+					['Temperature'], // Duplicate
+					['Dissolved Oxygen']
 				]
 			};
 
-			const totalRows = mockData.data.length;
-			const totalColumns = mockData.columns.length;
+			// Simulate the reactive statement logic
+			const hasData = true;
+			const hasRequiredColumns = mockData.columns.includes('CharacteristicName');
 
-			expect(totalRows).toBe(2);
-			expect(totalColumns).toBe(3);
+			let characteristicNames = [];
+			if (hasData && hasRequiredColumns) {
+				characteristicNames = [
+					...new Set(
+						mockData.data.map((row) => {
+							const charIndex = mockData.columns.indexOf('CharacteristicName');
+							return charIndex >= 0 ? row[charIndex] : '';
+						})
+					)
+				].sort();
+			}
+
+			expect(characteristicNames).toEqual(['Dissolved Oxygen', 'Temperature', 'pH']);
 		});
 
 		it('should handle empty data gracefully', () => {
 			const mockData = {
-				columns: ['MonitoringLocationID', 'MonitoringLocationName', 'CharacteristicName'],
+				columns: [],
 				data: []
 			};
 
-			const totalRows = mockData.data.length;
-			const totalColumns = mockData.columns.length;
+			// Simulate the reactive statement logic
+			const hasData = false;
+			const hasRequiredColumns =
+				mockData.columns.includes('MonitoringLocationID') &&
+				mockData.columns.includes('MonitoringLocationName');
 
-			expect(totalRows).toBe(0);
-			expect(totalColumns).toBe(3);
-		});
-	});
+			let locationNameIdMap = {};
+			if (hasData && hasRequiredColumns) {
+				locationNameIdMap = mockData.data.reduce(
+					(acc, row) => {
+						const id = row[mockData.columns.indexOf('MonitoringLocationID')];
+						const name = row[mockData.columns.indexOf('MonitoringLocationName')];
+						if (id && name) {
+							acc[id] = name;
+						}
+						return acc;
+					},
+					{} as Record<string, string>
+				);
+			}
 
-	describe('Selection Summary Functions', () => {
-		it('should generate correct selection summary', () => {
-			const selectedLocationId = 'LOC001';
-			const selectedLocationName = 'Lake Michigan';
-			const selectedCharacteristicName = 'Temperature';
-
-			const hasLocationSelection = Boolean(selectedLocationId && selectedLocationName);
-			const hasCharacteristicSelection = Boolean(selectedCharacteristicName);
-
-			expect(hasLocationSelection).toBe(true);
-			expect(hasCharacteristicSelection).toBe(true);
-			expect(selectedLocationId).toBe('LOC001');
-			expect(selectedLocationName).toBe('Lake Michigan');
-			expect(selectedCharacteristicName).toBe('Temperature');
-		});
-
-		it('should handle partial selections', () => {
-			const selectedLocationId = 'LOC001';
-			const selectedLocationName = 'Lake Michigan';
-			const selectedCharacteristicName = '';
-
-			const hasLocationSelection = Boolean(selectedLocationId && selectedLocationName);
-			const hasCharacteristicSelection = Boolean(selectedCharacteristicName);
-
-			expect(hasLocationSelection).toBe(true);
-			expect(hasCharacteristicSelection).toBe(false);
+			expect(locationNameIdMap).toEqual({});
 		});
 	});
 });

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { formatNumber, capitalize, isValidEmail, debounce, generateId } from './utils';
 
 describe('Utility Functions', () => {
@@ -70,8 +70,10 @@ describe('Utility Functions', () => {
 		});
 
 		it('should handle null and undefined', () => {
-			expect(capitalize(null as string | null)).toBe(null);
-			expect(capitalize(undefined as string | undefined)).toBe(undefined);
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			expect(capitalize(null as any)).toBe(null);
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			expect(capitalize(undefined as any)).toBe(undefined);
 		});
 	});
 

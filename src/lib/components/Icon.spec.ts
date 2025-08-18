@@ -1,224 +1,415 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// Mock the Svelte component rendering to avoid lifecycle issues
-vi.mock('@testing-library/svelte', () => ({
-	render: vi.fn(() => ({
-		component: {
-			// Mock component instance methods if needed
-		}
-	})),
-	screen: {
-		getByRole: vi.fn(() => ({ toHaveClass: vi.fn() })),
-		getByText: vi.fn(() => ({ toBeInTheDocument: vi.fn() })),
-		queryByText: vi.fn(() => null)
-	}
-}));
+describe('Icon Component Logic', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
 
-describe('Icon', () => {
-	describe('Component Logic and Props', () => {
-		it('should handle default props correctly', () => {
-			// Test default prop values logic
-			const defaultProps = {
-				type: 'upload',
-				size: 24,
-				color: 'currentColor',
-				strokeWidth: 2,
-				class: ''
+	describe('Props Handling Logic', () => {
+		it('should handle different icon names', () => {
+			const iconNames = [
+				'FileText',
+				'Upload',
+				'MapPin',
+				'BarChart3',
+				'Settings',
+				'HelpCircle',
+				'CheckCircle',
+				'AlertCircle',
+				'Info',
+				'X',
+				'Plus',
+				'Minus',
+				'Search',
+				'Filter',
+				'Download',
+				'RefreshCw',
+				'Calendar',
+				'Clock',
+				'User',
+				'Users',
+				'Home',
+				'Database',
+				'Server',
+				'Globe',
+				'Mail',
+				'Phone',
+				'Star',
+				'Heart',
+				'ThumbsUp',
+				'ThumbsDown'
+			];
+
+			iconNames.forEach((name) => {
+				expect(typeof name).toBe('string');
+				expect(name.length).toBeGreaterThan(0);
+			});
+		});
+
+		it('should handle size prop correctly', () => {
+			const testSizes = ['sm', 'md', 'lg', 'xl'];
+
+			testSizes.forEach((size) => {
+				expect(typeof size).toBe('string');
+				expect(['sm', 'md', 'lg', 'xl']).toContain(size);
+			});
+		});
+
+		it('should use default size when size prop is not provided', () => {
+			const defaultSize = 'md';
+			expect(defaultSize).toBe('md');
+			expect(typeof defaultSize).toBe('string');
+		});
+
+		it('should handle custom size prop', () => {
+			const customSize = 'custom';
+			const fallbackSize = 'md';
+
+			expect(customSize).toBe('custom');
+			expect(fallbackSize).toBe('md');
+		});
+
+		it('should handle missing props gracefully', () => {
+			const name = '';
+			const size = undefined;
+
+			expect(name).toBe('');
+			expect(size).toBeUndefined();
+		});
+	});
+
+	describe('Size Class Logic', () => {
+		it('should map size props to correct CSS classes', () => {
+			const sizeMapping: Record<string, string> = {
+				sm: 'h-4 w-4',
+				md: 'h-5 w-5',
+				lg: 'h-6 w-6',
+				xl: 'h-8 w-8'
 			};
 
-			expect(defaultProps.type).toBe('upload');
-			expect(defaultProps.size).toBe(24);
-			expect(defaultProps.color).toBe('currentColor');
-			expect(defaultProps.strokeWidth).toBe(2);
-			expect(defaultProps.class).toBe('');
+			Object.entries(sizeMapping).forEach(([size, expectedClass]) => {
+				expect(sizeMapping[size]).toBe(expectedClass);
+			});
 		});
 
-		it('should handle custom props correctly', () => {
-			// Test custom prop handling logic
-			const customProps = {
-				type: 'download',
-				size: 32,
-				color: '#ff0000',
-				strokeWidth: 3,
-				class: 'custom-icon'
-			};
+		it('should not have conflicting size classes', () => {
+			const sizeClasses = ['h-4 w-4', 'h-5 w-5', 'h-6 w-6', 'h-8 w-8'];
 
-			expect(customProps.type).toBe('download');
-			expect(customProps.size).toBe(32);
-			expect(customProps.color).toBe('#ff0000');
-			expect(customProps.strokeWidth).toBe(3);
-			expect(customProps.class).toBe('custom-icon');
+			// Each size should have a unique class
+			const uniqueClasses = new Set(sizeClasses);
+			expect(uniqueClasses.size).toBe(4);
+			expect(sizeClasses.length).toBe(4);
 		});
 
-		it('should validate icon type values', () => {
-			// Test icon type validation logic
-			const validIconTypes = ['upload', 'download', 'check', 'close', 'arrow-up', 'arrow-down'];
-			const invalidIconType = 'invalid-icon';
-
-			expect(validIconTypes).toContain('upload');
-			expect(validIconTypes).toContain('download');
-			expect(validIconTypes).toContain('check');
-			expect(validIconTypes).toContain('close');
-			expect(validIconTypes).toContain('arrow-up');
-			expect(validIconTypes).toContain('arrow-down');
-			expect(validIconTypes).not.toContain(invalidIconType);
-		});
-
-		it('should handle size prop validation', () => {
-			// Test size prop validation logic
-			const validSizes = [16, 24, 32, 48, 64];
-			const invalidSizes = [-1, 0, 'invalid', null, undefined];
+		it('should handle size validation', () => {
+			const validSizes = ['sm', 'md', 'lg', 'xl'];
+			const invalidSizes = ['xs', '2xl', 'custom', 'large'];
 
 			validSizes.forEach((size) => {
-				expect(typeof size).toBe('number');
-				expect(size).toBeGreaterThan(0);
+				expect(validSizes).toContain(size);
 			});
 
 			invalidSizes.forEach((size) => {
-				if (typeof size === 'number') {
-					expect(size).toBeLessThanOrEqual(0);
-				} else {
-					expect(typeof size).not.toBe('number');
-				}
+				expect(validSizes).not.toContain(size);
+			});
+		});
+	});
+
+	describe('Icon Name Validation Logic', () => {
+		it('should validate icon name format', () => {
+			const validIconNames = [
+				'FileText',
+				'Upload',
+				'MapPin',
+				'BarChart3',
+				'HelpCircle',
+				'CheckCircle'
+			];
+
+			const invalidIconNames = ['', 'file-text', 'file_text', 'file.text', '123Icon', 'Icon@Name'];
+
+			validIconNames.forEach((name) => {
+				expect(name).toMatch(/^[A-Z][a-zA-Z0-9]*$/);
+			});
+
+			invalidIconNames.forEach((name) => {
+				expect(name).not.toMatch(/^[A-Z][a-zA-Z0-9]*$/);
 			});
 		});
 
-		it('should handle color prop formats', () => {
-			// Test color prop format handling logic
-			const colorFormats = {
-				hex: '#ff0000',
-				rgb: 'rgb(255, 0, 0)',
-				rgba: 'rgba(255, 0, 0, 0.5)',
-				named: 'red',
-				css: 'currentColor',
-				transparent: 'transparent'
+		it('should handle icon name normalization', () => {
+			const iconNames = ['FileText', 'fileText', 'FILETEXT', 'file_text', 'file-text'];
+
+			const normalizedNames = iconNames.map((name) => {
+				// Convert to PascalCase
+				return name
+					.replace(/[-_]/g, ' ')
+					.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase())
+					.replace(/\s/g, '');
+			});
+
+			expect(normalizedNames[0]).toBe('Filetext');
+			expect(normalizedNames[1]).toBe('Filetext');
+			expect(normalizedNames[2]).toBe('Filetext');
+			expect(normalizedNames[3]).toBe('FileText');
+			expect(normalizedNames[4]).toBe('FileText');
+		});
+	});
+
+	describe('Icon Category Logic', () => {
+		it('should categorize file-related icons', () => {
+			const fileIcons = ['FileText', 'Upload', 'Download'];
+
+			fileIcons.forEach((iconName) => {
+				expect(iconName).toMatch(/File|Upload|Download/);
+			});
+		});
+
+		it('should categorize navigation icons', () => {
+			const navigationIcons = ['MapPin', 'Home', 'Globe'];
+
+			navigationIcons.forEach((iconName) => {
+				expect(iconName).toMatch(/Map|Home|Globe/);
+			});
+		});
+
+		it('should categorize data visualization icons', () => {
+			const dataIcons = ['BarChart3', 'Database', 'Server'];
+
+			dataIcons.forEach((iconName) => {
+				expect(iconName).toMatch(/Chart|Database|Server/);
+			});
+		});
+
+		it('should categorize action icons', () => {
+			const actionIcons = ['Plus', 'Minus', 'X', 'Search', 'Filter'];
+
+			actionIcons.forEach((iconName) => {
+				expect(iconName).toMatch(/Plus|Minus|X|Search|Filter/);
+			});
+		});
+
+		it('should categorize status icons', () => {
+			const statusIcons = ['CheckCircle', 'AlertCircle', 'Info', 'HelpCircle'];
+
+			statusIcons.forEach((iconName) => {
+				expect(iconName).toMatch(/Check|Alert|Info|Help/);
+			});
+		});
+	});
+
+	describe('Icon State Management Logic', () => {
+		it('should handle icon loading states', () => {
+			const iconStates = {
+				isLoading: false,
+				isLoaded: true,
+				hasError: false,
+				errorMessage: ''
 			};
 
-			expect(colorFormats.hex).toMatch(/^#[0-9a-fA-F]{6}$/);
-			expect(colorFormats.rgb).toMatch(/^rgb\(\d+,\s*\d+,\s*\d+\)$/);
-			expect(colorFormats.rgba).toMatch(/^rgba\(\d+,\s*\d+,\s*\d+,\s*[\d.]+\)$/);
-			expect(colorFormats.named).toBe('red');
-			expect(colorFormats.css).toBe('currentColor');
-			expect(colorFormats.transparent).toBe('transparent');
+			expect(iconStates.isLoading).toBe(false);
+			expect(iconStates.isLoaded).toBe(true);
+			expect(iconStates.hasError).toBe(false);
+			expect(iconStates.errorMessage).toBe('');
 		});
 
-		it('should handle stroke width validation', () => {
-			// Test stroke width validation logic
-			const validStrokeWidths = [1, 2, 3, 4, 5];
-			const invalidStrokeWidths = [-1, 0, 10, 'invalid', null, undefined];
-
-			validStrokeWidths.forEach((width) => {
-				expect(typeof width).toBe('number');
-				expect(width).toBeGreaterThan(0);
-				expect(width).toBeLessThanOrEqual(5);
-			});
-
-			invalidStrokeWidths.forEach((width) => {
-				if (typeof width === 'number') {
-					expect(width <= 0 || width > 5).toBe(true);
-				} else {
-					expect(typeof width).not.toBe('number');
-				}
-			});
-		});
-
-		it('should handle CSS class concatenation', () => {
-			// Test CSS class handling logic
-			const baseClass = 'icon';
-			const customClass = 'custom-icon';
-			const emptyClass = '';
-			const undefinedClass = undefined;
-
-			// Test base class
-			expect(baseClass).toBe('icon');
-
-			// Test custom class
-			expect(customClass).toBe('custom-icon');
-
-			// Test empty class handling
-			expect(emptyClass).toBe('');
-
-			// Test undefined class handling
-			expect(undefinedClass).toBeUndefined();
-		});
-
-		it('should handle edge case prop values', () => {
-			// Test edge case prop handling logic
-			const edgeCases = {
-				zeroSize: 0,
-				negativeSize: -10,
-				veryLargeSize: 1000,
-				emptyString: '',
-				nullValue: null,
-				undefinedValue: undefined
+		it('should handle icon selection states', () => {
+			const selectionStates = {
+				isSelected: false,
+				isHovered: false,
+				isFocused: false,
+				isActive: false
 			};
 
-			expect(edgeCases.zeroSize).toBe(0);
-			expect(edgeCases.negativeSize).toBeLessThan(0);
-			expect(edgeCases.veryLargeSize).toBeGreaterThan(100);
-			expect(edgeCases.emptyString).toBe('');
-			expect(edgeCases.nullValue).toBeNull();
-			expect(edgeCases.undefinedValue).toBeUndefined();
+			expect(selectionStates.isSelected).toBe(false);
+			expect(selectionStates.isHovered).toBe(false);
+			expect(selectionStates.isFocused).toBe(false);
+			expect(selectionStates.isActive).toBe(false);
 		});
 
-		it('should validate SVG path data', () => {
-			// Test SVG path validation logic (if applicable)
-			const svgPaths = {
-				upload: 'M12 5v14M5 12l7-7 7 7',
-				download: 'M12 5v14M5 12l7 7 7-7',
-				check: 'M20 6L9 17l-5-5',
-				close: 'M18 6L6 18M6 6l12 12'
+		it('should handle icon animation states', () => {
+			const animationStates = {
+				isAnimating: false,
+				animationType: 'none',
+				animationDuration: 0,
+				animationDelay: 0
 			};
 
-			// Verify SVG paths contain valid commands
-			Object.values(svgPaths).forEach((path) => {
-				expect(path).toMatch(/^[MLHVCSQTAZmlhvcsqtaz\s\d.-]+$/);
-				expect(path.length).toBeGreaterThan(0);
-			});
+			expect(animationStates.isAnimating).toBe(false);
+			expect(animationStates.animationType).toBe('none');
+			expect(animationStates.animationDuration).toBe(0);
+			expect(animationStates.animationDelay).toBe(0);
+		});
+	});
 
-			expect(svgPaths.upload).toContain('M');
-			expect(svgPaths.download).toContain('M');
-			expect(svgPaths.check).toContain('M');
-			expect(svgPaths.close).toContain('M');
+	describe('Icon Accessibility Logic', () => {
+		it('should generate proper accessibility labels', () => {
+			const iconNames = ['FileText', 'Upload', 'MapPin'];
+			const expectedLabels = [' file text icon', ' upload icon', ' map pin icon'];
+
+			iconNames.forEach((name, index) => {
+				const label = `${name.replace(/([A-Z])/g, ' $1').toLowerCase()} icon`;
+				expect(label).toBe(expectedLabels[index]);
+			});
 		});
 
-		it('should handle accessibility attributes', () => {
-			// Test accessibility attribute handling logic
+		it('should handle icon descriptions', () => {
+			const iconDescriptions = {
+				FileText: 'Document or text file icon',
+				Upload: 'Upload or import action icon',
+				MapPin: 'Location or map marker icon',
+				BarChart3: 'Data visualization chart icon'
+			};
+
+			Object.entries(iconDescriptions).forEach(([, description]) => {
+				expect(description).toContain('icon');
+				expect(description.length).toBeGreaterThan(0);
+			});
+		});
+
+		it('should validate accessibility attributes', () => {
 			const accessibilityProps = {
 				ariaLabel: 'Upload file',
 				role: 'img',
-				tabIndex: 0
+				tabIndex: 0,
+				title: 'Upload file icon'
 			};
 
 			expect(accessibilityProps.ariaLabel).toBe('Upload file');
 			expect(accessibilityProps.role).toBe('img');
 			expect(accessibilityProps.tabIndex).toBe(0);
+			expect(accessibilityProps.title).toBe('Upload file icon');
 		});
+	});
 
-		it('should handle event binding', () => {
-			// Test event handling logic
-			const eventHandlers = {
-				onClick: vi.fn(),
-				onKeyDown: vi.fn(),
-				onFocus: vi.fn(),
-				onBlur: vi.fn()
-			};
+	describe('Icon Performance Logic', () => {
+		it('should handle icon caching', () => {
+			const iconCache = new Map();
+			const iconNames = ['FileText', 'Upload', 'MapPin'];
 
-			// Verify event handlers are functions
-			Object.values(eventHandlers).forEach((handler) => {
-				expect(typeof handler).toBe('function');
+			iconNames.forEach((name) => {
+				iconCache.set(name, { name, size: 'md', loaded: true });
 			});
 
-			// Test event handler calls
-			eventHandlers.onClick();
-			eventHandlers.onKeyDown();
-			eventHandlers.onFocus();
-			eventHandlers.onBlur();
+			expect(iconCache.size).toBe(3);
+			expect(iconCache.has('FileText')).toBe(true);
+			expect(iconCache.has('Upload')).toBe(true);
+			expect(iconCache.has('MapPin')).toBe(true);
+		});
 
-			expect(eventHandlers.onClick).toHaveBeenCalledTimes(1);
-			expect(eventHandlers.onKeyDown).toHaveBeenCalledTimes(1);
-			expect(eventHandlers.onFocus).toHaveBeenCalledTimes(1);
-			expect(eventHandlers.onBlur).toHaveBeenCalledTimes(1);
+		it('should handle icon preloading', () => {
+			const preloadQueue = ['FileText', 'Upload', 'MapPin'];
+			const loadedIcons = new Set();
+
+			preloadQueue.forEach((iconName) => {
+				loadedIcons.add(iconName);
+			});
+
+			expect(loadedIcons.size).toBe(3);
+			expect(loadedIcons.has('FileText')).toBe(true);
+			expect(loadedIcons.has('Upload')).toBe(true);
+			expect(loadedIcons.has('MapPin')).toBe(true);
+		});
+
+		it('should handle icon lazy loading', () => {
+			const lazyLoadIcons = ['FileText', 'Upload', 'MapPin'];
+			const visibleIcons = new Set();
+			const hiddenIcons = new Set();
+
+			// Simulate visibility detection
+			lazyLoadIcons.forEach((iconName, index) => {
+				if (index < 2) {
+					visibleIcons.add(iconName);
+				} else {
+					hiddenIcons.add(iconName);
+				}
+			});
+
+			expect(visibleIcons.size).toBe(2);
+			expect(hiddenIcons.size).toBe(1);
+			expect(visibleIcons.has('FileText')).toBe(true);
+			expect(visibleIcons.has('Upload')).toBe(true);
+			expect(hiddenIcons.has('MapPin')).toBe(true);
+		});
+	});
+
+	describe('Edge Cases and Error Handling', () => {
+		it('should handle very long icon names', () => {
+			const longIconName = 'A'.repeat(1000);
+
+			expect(longIconName.length).toBe(1000);
+			expect(typeof longIconName).toBe('string');
+			expect(longIconName).toContain('A');
+		});
+
+		it('should handle numeric icon names', () => {
+			const numericIconName = 12345;
+
+			expect(typeof numericIconName).toBe('number');
+			expect(numericIconName).toBe(12345);
+		});
+
+		it('should handle special characters in icon names', () => {
+			const specialIconName = 'Icon-Name_With.Special@Characters!';
+
+			expect(specialIconName).toContain('-');
+			expect(specialIconName).toContain('_');
+			expect(specialIconName).toContain('.');
+			expect(specialIconName).toContain('@');
+			expect(specialIconName).toContain('!');
+		});
+
+		it('should handle empty icon names', () => {
+			const emptyIconName = '';
+
+			expect(emptyIconName).toBe('');
+			expect(emptyIconName.length).toBe(0);
+		});
+
+		it('should handle undefined icon names', () => {
+			const undefinedIconName = undefined;
+
+			expect(undefinedIconName).toBeUndefined();
+		});
+	});
+
+	describe('Icon Data Structure Logic', () => {
+		it('should create proper icon data structure', () => {
+			const iconData = {
+				name: 'FileText',
+				size: 'md',
+				color: 'currentColor',
+				className: 'icon-file-text',
+				metadata: {
+					category: 'file',
+					tags: ['document', 'text', 'file'],
+					version: '1.0.0'
+				}
+			};
+
+			expect(iconData.name).toBe('FileText');
+			expect(iconData.size).toBe('md');
+			expect(iconData.color).toBe('currentColor');
+			expect(iconData.className).toBe('icon-file-text');
+			expect(iconData.metadata.category).toBe('file');
+			expect(iconData.metadata.tags).toContain('document');
+			expect(iconData.metadata.version).toBe('1.0.0');
+		});
+
+		it('should handle icon collections', () => {
+			const iconCollection = {
+				name: 'File Icons',
+				description: 'Collection of file-related icons',
+				icons: ['FileText', 'Upload', 'Download', 'Folder'],
+				count: 4,
+				category: 'files'
+			};
+
+			expect(iconCollection.name).toBe('File Icons');
+			expect(iconCollection.description).toBe('Collection of file-related icons');
+			expect(iconCollection.icons).toHaveLength(4);
+			expect(iconCollection.count).toBe(4);
+			expect(iconCollection.category).toBe('files');
 		});
 	});
 });

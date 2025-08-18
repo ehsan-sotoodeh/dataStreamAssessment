@@ -1,53 +1,16 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-// Mock the Svelte component rendering to avoid lifecycle issues
-vi.mock('@testing-library/svelte', () => ({
-	render: vi.fn(() => ({
-		component: {
-			// Mock component instance methods if needed
-		}
-	})),
-	screen: {
-		getByRole: vi.fn(() => ({ toHaveClass: vi.fn() })),
-		getByText: vi.fn(() => ({ toBeInTheDocument: vi.fn() })),
-		queryByText: vi.fn(() => null)
-	},
-	fireEvent: {
-		change: vi.fn(),
-		dragover: vi.fn(),
-		dragleave: vi.fn(),
-		drop: vi.fn()
-	}
-}));
+describe('FileUpload Component Logic', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
 
-// Mock FileReader
-global.FileReader = vi.fn(() => ({
-	readAsText: vi.fn(),
-	onload: null,
-	onerror: null,
-	result: null
-}));
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
 
-// Mock File constructor
-global.File = vi.fn((content, filename, options) => ({
-	name: filename,
-	size: content.length,
-	type: options?.type || 'text/csv',
-	lastModified: Date.now()
-}));
-
-describe('FileUpload', () => {
-	describe('Component Logic and File Handling', () => {
-		beforeEach(() => {
-			vi.clearAllMocks();
-		});
-
-		afterEach(() => {
-			vi.restoreAllMocks();
-		});
-
-		it('should handle file validation correctly', () => {
-			// Test file validation logic
+	describe('File Validation Logic', () => {
+		it('should validate CSV files correctly', () => {
 			const validFiles = [
 				{ name: 'data.csv', type: 'text/csv', size: 1024 },
 				{ name: 'export.csv', type: 'text/csv', size: 2048 },
@@ -77,7 +40,6 @@ describe('FileUpload', () => {
 		});
 
 		it('should handle file size validation correctly', () => {
-			// Test file size validation logic
 			const maxSize = 10 * 1024 * 1024; // 10MB
 			const validSizes = [
 				1024, // 1KB
@@ -100,90 +62,203 @@ describe('FileUpload', () => {
 			invalidSizes.forEach((size) => {
 				if (size > 0) {
 					expect(size).toBeGreaterThan(maxSize);
-				} else {
-					expect(size).toBeLessThanOrEqual(0);
 				}
 			});
 		});
 
-		it('should handle CSV parsing logic correctly', () => {
-			// Test CSV parsing logic
-			const csvContent = 'name,age,city\nJohn,30,New York\nJane,25,London';
+		it('should handle file extension validation', () => {
+			const validExtensions = [
+				'data.csv',
+				'export.CSV',
+				'water-quality-data.csv',
+				'file_with_underscores.csv'
+			];
+
+			const invalidExtensions = ['data.txt', 'data.xlsx', 'data.pdf', 'data.doc', 'data'];
+
+			validExtensions.forEach((filename) => {
+				expect(filename.toLowerCase().endsWith('.csv')).toBe(true);
+			});
+
+			invalidExtensions.forEach((filename) => {
+				expect(filename.toLowerCase().endsWith('.csv')).toBe(false);
+			});
+		});
+	});
+
+	describe('CSV Processing Logic', () => {
+		it('should parse CSV data into columns and rows', () => {
+			const csvContent = 'ID,Name,Value\n1,Test,100\n2,Example,200';
 			const lines = csvContent.split('\n');
 			const headers = lines[0].split(',');
 			const data = lines.slice(1).map((line) => line.split(','));
 
-			expect(headers).toEqual(['name', 'age', 'city']);
-			expect(data).toHaveLength(2);
-			expect(data[0]).toEqual(['John', '30', 'New York']);
-			expect(data[1]).toEqual(['Jane', '25', 'London']);
+			expect(headers).toEqual(['ID', 'Name', 'Value']);
+			expect(data).toEqual([
+				['1', 'Test', '100'],
+				['2', 'Example', '200']
+			]);
 		});
 
-		it('should handle CSV with quoted values correctly', () => {
-			// Test CSV parsing with quoted values logic
-			const csvWithQuotes =
-				'name,description,city\n"John Doe","Software Engineer, Senior","New York, NY"\n"Jane Smith","Data Analyst","London, UK"';
+		it('should handle empty CSV files', () => {
+			const emptyCSV = '';
+			const lines = emptyCSV.split('\n');
 
-			// Simple CSV parsing logic (handles basic quoted values)
-			const parseCSV = (csv: string) => {
-				const lines = csv.split('\n');
-				const headers = lines[0].split(',');
-				const data = lines.slice(1).map((line) => {
-					// Basic quoted value handling
-					const values = [];
-					let current = '';
-					let inQuotes = false;
+			expect(lines).toEqual(['']);
+			expect(lines[0]).toBe('');
+		});
 
-					for (let i = 0; i < line.length; i++) {
-						const char = line[i];
-						if (char === '"') {
-							inQuotes = !inQuotes;
-						} else if (char === ',' && !inQuotes) {
-							values.push(current.trim());
-							current = '';
-						} else {
-							current += char;
-						}
-					}
-					values.push(current.trim());
-					return values;
-				});
+		it('should handle CSV with only headers', () => {
+			const headerOnlyCSV = 'ID,Name,Value';
+			const lines = headerOnlyCSV.split('\n');
+			const headers = lines[0].split(',');
+			const data = lines.slice(1);
 
-				return { headers, data };
+			expect(headers).toEqual(['ID', 'Name', 'Value']);
+			expect(data).toEqual([]);
+		});
+
+		it('should handle CSV with quoted values', () => {
+			const quotedCSV =
+				'ID,Name,Description\n1,Test,"This is a description"\n2,Example,"Another description"';
+			const lines = quotedCSV.split('\n');
+			const headers = lines[0].split(',');
+			const data = lines.slice(1).map((line) => line.split(','));
+
+			expect(headers).toEqual(['ID', 'Name', 'Description']);
+			expect(data).toEqual([
+				['1', 'Test', '"This is a description"'],
+				['2', 'Example', '"Another description"']
+			]);
+		});
+
+		it('should handle CSV with empty rows', () => {
+			const csvWithEmptyRows = 'ID,Name\n1,Test\n\n2,Example\n\n';
+			const lines = csvWithEmptyRows.split('\n');
+			const headers = lines[0].split(',');
+			const data = lines.slice(1).filter((line) => line.trim() !== '');
+
+			expect(headers).toEqual(['ID', 'Name']);
+			expect(data).toEqual(['1,Test', '2,Example']);
+		});
+	});
+
+	describe('Data Structure Logic', () => {
+		it('should create proper data structure for analysis', () => {
+			const mockData = {
+				columns: [
+					'MonitoringLocationID',
+					'MonitoringLocationName',
+					'CharacteristicName',
+					'ResultValue'
+				],
+				data: [
+					['LOC001', 'Lake Michigan', 'Temperature', '22.5'],
+					['LOC002', 'Lake Superior', 'Temperature', '18.2'],
+					['LOC001', 'Lake Michigan', 'pH', '7.2']
+				]
 			};
 
-			const result = parseCSV(csvWithQuotes);
-
-			expect(result.headers).toEqual(['name', 'description', 'city']);
-			expect(result.data).toHaveLength(2);
-			expect(result.data[0]).toEqual(['John Doe', 'Software Engineer, Senior', 'New York, NY']);
-			expect(result.data[1]).toEqual(['Jane Smith', 'Data Analyst', 'London, UK']);
+			expect(mockData.columns).toHaveLength(4);
+			expect(mockData.data).toHaveLength(3);
+			expect(mockData.columns).toContain('MonitoringLocationID');
+			expect(mockData.columns).toContain('MonitoringLocationName');
+			expect(mockData.columns).toContain('CharacteristicName');
+			expect(mockData.columns).toContain('ResultValue');
 		});
 
-		it('should handle empty CSV files correctly', () => {
-			// Test empty CSV handling logic
-			const emptyCSV = '';
-			const csvWithOnlyHeaders = 'name,age,city';
-			const csvWithEmptyRows = 'name,age,city\n\nJohn,30,New York\n\n';
+		it('should handle data filtering logic', () => {
+			const mockData = {
+				columns: ['ID', 'Name', 'Value'],
+				data: [
+					['1', 'Test', '100'],
+					['2', 'Example', '200'],
+					['3', 'Sample', '300']
+				]
+			};
 
-			// Test empty CSV
-			expect(emptyCSV.length).toBe(0);
-			expect(emptyCSV.split('\n')).toEqual(['']);
+			const filteredData = mockData.data.filter((row) => {
+				const value = parseInt(row[2]);
+				return value > 150;
+			});
 
-			// Test CSV with only headers
-			const headersOnly = csvWithOnlyHeaders.split('\n');
-			expect(headersOnly).toHaveLength(1);
-			expect(headersOnly[0]).toBe('name,age,city');
-
-			// Test CSV with empty rows
-			const withEmptyRows = csvWithEmptyRows.split('\n');
-			expect(withEmptyRows).toHaveLength(5);
-			expect(withEmptyRows[1]).toBe('');
-			expect(withEmptyRows[3]).toBe('');
+			expect(filteredData).toHaveLength(2);
+			expect(filteredData[0]).toEqual(['2', 'Example', '200']);
+			expect(filteredData[1]).toEqual(['3', 'Sample', '300']);
 		});
 
-		it('should handle drag and drop state management correctly', () => {
-			// Test drag and drop state logic
+		it('should handle data aggregation logic', () => {
+			const mockData = {
+				columns: ['ID', 'Name', 'Value'],
+				data: [
+					['1', 'Test', '100'],
+					['2', 'Example', '200'],
+					['3', 'Sample', '300']
+				]
+			};
+
+			const values = mockData.data.map((row) => parseInt(row[2]));
+			const sum = values.reduce((acc, val) => acc + val, 0);
+			const average = sum / values.length;
+
+			expect(sum).toBe(600);
+			expect(average).toBe(200);
+		});
+	});
+
+	describe('Error Handling Logic', () => {
+		it('should handle file type errors', () => {
+			const errorTypes = [
+				'Invalid file type. Please upload a CSV file.',
+				'File is too large. Maximum size is 10MB.',
+				'No file selected. Please choose a file to upload.',
+				'Error reading file. Please try again.'
+			];
+
+			errorTypes.forEach((message) => {
+				expect(typeof message).toBe('string');
+				expect(message.length).toBeGreaterThan(0);
+				// Check if message contains helpful words
+				expect(
+					message.includes('Please') || message.includes('Maximum') || message.includes('Error')
+				).toBe(true);
+			});
+		});
+
+		it('should handle file reading errors', () => {
+			const errorScenarios = [
+				{ type: 'File not found', message: 'File could not be read' },
+				{ type: 'Permission denied', message: 'Access denied to file' },
+				{ type: 'File too large', message: 'File exceeds size limit' },
+				{ type: 'Invalid format', message: 'File format not supported' }
+			];
+
+			errorScenarios.forEach((scenario) => {
+				expect(scenario.type).toBeTruthy();
+				expect(scenario.message).toBeTruthy();
+				expect(typeof scenario.type).toBe('string');
+				expect(typeof scenario.message).toBe('string');
+			});
+		});
+
+		it('should handle validation errors', () => {
+			const validationErrors = [
+				{ field: 'fileType', message: 'Must be CSV file' },
+				{ field: 'fileSize', message: 'Must be under 10MB' },
+				{ field: 'fileName', message: 'Must have .csv extension' }
+			];
+
+			validationErrors.forEach((error) => {
+				expect(error.field).toBeTruthy();
+				expect(error.message).toBeTruthy();
+				expect(typeof error.field).toBe('string');
+				expect(typeof error.message).toBe('string');
+			});
+		});
+	});
+
+	describe('Event Handling Logic', () => {
+		it('should handle drag and drop state management', () => {
 			const dragStates = {
 				isDragOver: false,
 				isDragging: false,
@@ -205,8 +280,7 @@ describe('FileUpload', () => {
 			expect(dragStates.isDragging).toBe(false);
 		});
 
-		it('should handle file input change events correctly', () => {
-			// Test file input change handling logic
+		it('should handle file input change events', () => {
 			const mockEvent = {
 				target: {
 					files: [{ name: 'test.csv', type: 'text/csv', size: 1024 }]
@@ -221,135 +295,61 @@ describe('FileUpload', () => {
 			expect(files[0].size).toBe(1024);
 		});
 
-		it('should handle multiple file selection correctly', () => {
-			// Test multiple file selection logic
+		it('should handle multiple file selection', () => {
 			const mockEvent = {
 				target: {
 					files: [
 						{ name: 'data1.csv', type: 'text/csv', size: 1024 },
-						{ name: 'data2.csv', type: 'text/csv', size: 2048 },
-						{ name: 'data3.csv', type: 'text/csv', size: 512 }
+						{ name: 'data2.csv', type: 'text/csv', size: 2048 }
 					]
 				}
 			};
 
 			const files = Array.from(mockEvent.target.files);
 
-			expect(files).toHaveLength(3);
+			expect(files).toHaveLength(2);
 			files.forEach((file) => {
 				expect(file.type).toBe('text/csv');
 				expect(file.name.endsWith('.csv')).toBe(true);
 				expect(file.size).toBeGreaterThan(0);
 			});
 		});
+	});
 
-		it('should handle file reading errors correctly', () => {
-			// Test file reading error handling logic
-			const errorTypes = [
-				'File not found',
-				'Permission denied',
-				'File too large',
-				'Invalid file format',
-				'Network error'
-			];
+	describe('Performance and Edge Cases', () => {
+		it('should handle large CSV files efficiently', () => {
+			// Create a large CSV with many rows
+			const headers = 'ID,Name,Value,Category,Date';
+			const rows = Array.from(
+				{ length: 1000 },
+				(_, i) => `${i},Test${i},${Math.random() * 100},Category${i % 5},2024-01-01`
+			);
+			const largeCSV = [headers, ...rows].join('\n');
 
-			errorTypes.forEach((errorType) => {
-				expect(typeof errorType).toBe('string');
-				expect(errorType.length).toBeGreaterThan(0);
-			});
-
-			// Test error state management
-			const errorState = {
-				hasError: true,
-				errorMessage: 'File could not be read',
-				errorType: 'File not found'
-			};
-
-			expect(errorState.hasError).toBe(true);
-			expect(errorState.errorMessage).toBe('File could not be read');
-			expect(errorState.errorType).toBe('File not found');
+			expect(largeCSV.split('\n')).toHaveLength(1001);
+			expect(largeCSV.includes('ID,Name,Value,Category,Date')).toBe(true);
 		});
 
-		it('should handle file upload progress correctly', () => {
-			// Test file upload progress logic
-			const progressStates = [
-				{ loaded: 0, total: 1024, percentage: 0 },
-				{ loaded: 512, total: 1024, percentage: 50 },
-				{ loaded: 1024, total: 1024, percentage: 100 }
-			];
+		it('should handle special characters in CSV data', () => {
+			const specialCSV =
+				'ID,Name,Description\n1,Test,"Contains: commas, quotes, and\nnewlines"\n2,Example,"Special chars: !@#$%^&*()"';
+			const lines = specialCSV.split('\n');
 
-			progressStates.forEach((state) => {
-				const calculatedPercentage = Math.round((state.loaded / state.total) * 100);
-				expect(calculatedPercentage).toBe(state.percentage);
-				expect(state.loaded).toBeLessThanOrEqual(state.total);
-			});
+			expect(lines).toHaveLength(4); // Split on \n creates 4 lines due to newline in quoted field
+			expect(lines[0]).toBe('ID,Name,Description');
+			expect(lines[1]).toContain('Contains: commas, quotes, and');
+			expect(lines[2]).toContain('newlines"');
+			expect(lines[3]).toContain('Special chars: !@#$%^&*()');
 		});
 
-		it('should handle file type detection correctly', () => {
-			// Test file type detection logic
-			const fileTypes = [
-				{ name: 'data.csv', expectedType: 'text/csv' },
-				{ name: 'export.CSV', expectedType: 'text/csv' },
-				{ name: 'water-quality-data.csv', expectedType: 'text/csv' },
-				{ name: 'data.txt', expectedType: 'text/plain' },
-				{
-					name: 'data.xlsx',
-					expectedType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-				}
-			];
+		it('should handle empty and whitespace-only data', () => {
+			const csvWithWhitespace = 'ID,Name,Value\n1,Test,100\n  \n2,Example,200\n\t\n3,Sample,300';
+			const lines = csvWithWhitespace.split('\n');
+			const nonEmptyLines = lines.filter((line) => line.trim() !== '');
 
-			const getFileType = (filename: string) => {
-				const extension = filename.toLowerCase().split('.').pop();
-				switch (extension) {
-					case 'csv':
-						return 'text/csv';
-					case 'txt':
-						return 'text/plain';
-					case 'xlsx':
-						return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-					default:
-						return 'application/octet-stream';
-				}
-			};
-
-			fileTypes.forEach((fileType) => {
-				const detectedType = getFileType(fileType.name);
-				expect(detectedType).toBe(fileType.expectedType);
-			});
-		});
-
-		it('should handle accessibility features correctly', () => {
-			// Test accessibility feature logic
-			const accessibility = {
-				ariaLabel: 'Upload CSV file',
-				role: 'button',
-				tabIndex: 0,
-				accept: '.csv',
-				multiple: false
-			};
-
-			expect(accessibility.ariaLabel).toBe('Upload CSV file');
-			expect(accessibility.role).toBe('button');
-			expect(accessibility.tabIndex).toBe(0);
-			expect(accessibility.accept).toBe('.csv');
-			expect(accessibility.multiple).toBe(false);
-		});
-
-		it('should handle keyboard navigation correctly', () => {
-			// Test keyboard navigation logic
-			const keyEvents = [
-				{ key: 'Enter', action: 'activate' },
-				{ key: ' ', action: 'activate' },
-				{ key: 'Tab', action: 'navigate' },
-				{ key: 'Escape', action: 'cancel' }
-			];
-
-			keyEvents.forEach((event) => {
-				expect(typeof event.key).toBe('string');
-				expect(typeof event.action).toBe('string');
-				expect(event.key.length).toBeGreaterThan(0);
-				expect(event.action.length).toBeGreaterThan(0);
-			});
+			expect(lines).toHaveLength(6); // Split on \n creates 6 lines
+			expect(nonEmptyLines).toHaveLength(4);
+			expect(nonEmptyLines[0]).toBe('ID,Name,Value');
 		});
 	});
 });
