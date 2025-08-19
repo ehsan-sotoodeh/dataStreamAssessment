@@ -1,21 +1,23 @@
+// svelte.config.js
 import adapter from '@sveltejs/adapter-static';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 
+const isProd = process.env.NODE_ENV === 'production';
+// If this is a *project page* (not username.github.io), base must be "/<repo-name>"
+const projectBase = '/dataStreamAssessment';
+
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
-	// Preprocessors
 	preprocess: vitePreprocess(),
-
 	kit: {
-		// Use static adapter instead of auto
 		adapter: adapter({
-			// You can customize these if needed
-			// default options are shown below
 			pages: 'build',
 			assets: 'build',
-			fallback: 'index.html', // ensures SPA routing works
-			precompress: false
-		})
+			fallback: '404.html' // SPA routing on GitHub Pages
+		}),
+		paths: {
+			base: isProd ? projectBase : ''
+		}
 	}
 };
 
