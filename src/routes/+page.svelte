@@ -141,7 +141,7 @@
 
 		// Add markers for each monitoring location
 		monitoringLocations.forEach((location) => {
-			const marker = L.marker([location.lat, location.lng]).addTo(map).bindPopup(`
+			const marker = L.marker([location.lat, location.lng]).addTo(map!).bindPopup(`
 					<strong>${location.name}</strong><br>
 					ID: ${location.id}<br>
 					Lat: ${location.lat.toFixed(5)}<br>
@@ -158,7 +158,7 @@
 		// Fit map to show all markers
 		if (monitoringLocations.length > 0) {
 			const bounds = L.latLngBounds(monitoringLocations.map((loc) => L.latLng(loc.lat, loc.lng)));
-			map.fitBounds(bounds.pad(0.1));
+			map!.fitBounds(bounds.pad(0.1));
 		}
 	}
 
@@ -222,8 +222,57 @@
 
 	<div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
 		<!-- File Upload Section -->
-		<div class="mb-6 rounded-xl border border-gray-200 bg-white p-3 shadow-lg">
-			<FileUpload on:dataLoaded={handleDataLoaded} />
+		<div class="mb-8 rounded-xl border border-gray-200 bg-white p-8 shadow-lg">
+			<div class="grid grid-cols-1 gap-8 lg:grid-cols-3">
+				<!-- Upload Section -->
+				<div class="lg:col-span-2">
+					<FileUpload on:dataLoaded={handleDataLoaded} />
+				</div>
+
+				<!-- Download Section -->
+				<div class="lg:col-span-1">
+					<div
+						class="rounded-lg border border-gray-100 bg-gradient-to-br from-blue-50 to-indigo-50 p-6"
+					>
+						<div class="mb-4 flex items-center">
+							<div class="mr-3 flex h-10 w-10 items-center justify-center rounded-lg bg-blue-200">
+								<svg
+									class="h-6 w-6 text-blue-700"
+									fill="none"
+									stroke="currentColor"
+									viewBox="0 0 24 24"
+								>
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+									/>
+								</svg>
+							</div>
+							<div>
+								<h4 class="text-lg font-semibold text-gray-900">Sample Data</h4>
+								<p class="text-sm text-gray-600">Get started quickly</p>
+							</div>
+						</div>
+						<a
+							href="/data.csv"
+							download="data.csv"
+							class="inline-flex w-full items-center justify-center rounded-lg border border-blue-300 bg-white px-4 py-3 text-sm font-medium text-blue-700 shadow-sm transition-all hover:bg-blue-50 hover:shadow-md"
+						>
+							<svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+								/>
+							</svg>
+							Download Sample CSV
+						</a>
+					</div>
+				</div>
+			</div>
 		</div>
 
 		{#if hasData}
@@ -524,14 +573,40 @@
 
 					<!-- Map Section -->
 					{#if monitoringLocations.length > 0}
-						<div class="mb-6 rounded-xl border border-gray-200 bg-white p-6 shadow-lg">
-							<h3 class="mb-4 text-xl font-bold text-gray-900">Monitoring Locations Map</h3>
+						<div
+							class="mt-6 mb-6 rounded-xl border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 p-6 shadow-lg"
+						>
+							<div class="mb-4 flex items-center">
+								<div class="mr-3 flex h-8 w-8 items-center justify-center rounded-full bg-blue-100">
+									<svg
+										class="h-5 w-5 text-blue-600"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="2"
+											d="M17.657 16.657L12 22.314l-5.657-5.657a8 8 0 1111.314 0z"
+										/>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="2"
+											d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+										/>
+									</svg>
+								</div>
+								<h3 class="text-xl font-bold text-blue-900">Monitoring Locations Map</h3>
+							</div>
+
 							<div
 								bind:this={mapContainer}
-								class="w-full rounded-lg border border-gray-300"
+								class="w-full rounded-lg border border-blue-200 bg-white"
 								style="height: 400px; min-height: 400px;"
 							></div>
-							<p class="mt-2 text-sm text-gray-600">
+							<p class="mt-2 text-sm text-blue-800">
 								Showing {monitoringLocations.length} unique monitoring locations. Click any marker to
 								select that location.
 							</p>
