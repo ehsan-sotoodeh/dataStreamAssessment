@@ -9,6 +9,14 @@ A modern, full-stack web application built with **SvelteKit**, featuring compreh
 git clone <your-repo-url>
 cd dataStreamAssessment
 
+
+# Running using docker
+docker build -t dateStream .
+docker run -p 8080:80 dateStream
+
+
+
+
 # Install dependencies
 npm install
 

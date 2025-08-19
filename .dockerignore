@@ -1,0 +1,11 @@
+node_modules
+.vite
+.build
+dist
+.buildkit
+.git
+.gitignore
+Dockerfile*
+docker-compose*
+*.log
+.env*
