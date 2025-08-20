@@ -1,6 +1,17 @@
 <script lang="ts">
 	import FileUpload from '$lib/components/FileUpload.svelte';
 	import { onMount } from 'svelte';
+	import {
+		Download,
+		BarChart3,
+		Columns,
+		MapPin,
+		ChevronDown,
+		Info,
+		CircleCheck,
+		TriangleAlert,
+		Map
+	} from 'lucide-svelte';
 
 	let csvData: string[][] = [];
 	let columns: string[] = [];
@@ -236,19 +247,7 @@
 					>
 						<div class="mb-4 flex items-center">
 							<div class="mr-3 flex h-10 w-10 items-center justify-center rounded-lg bg-blue-200">
-								<svg
-									class="h-6 w-6 text-blue-700"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-									/>
-								</svg>
+								<Download class="h-6 w-6 text-blue-700" />
 							</div>
 							<div>
 								<h4 class="text-lg font-semibold text-gray-900">Sample Data</h4>
@@ -260,14 +259,7 @@
 							download="data.csv"
 							class="inline-flex w-full items-center justify-center rounded-lg border border-blue-300 bg-white px-4 py-3 text-sm font-medium text-blue-700 shadow-sm transition-all hover:bg-blue-50 hover:shadow-md"
 						>
-							<svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-								/>
-							</svg>
+							<Download class="mr-2 h-4 w-4" />
 							Download Sample CSV
 						</a>
 					</div>
@@ -283,19 +275,7 @@
 					<div class="flex items-center">
 						<div class="flex-shrink-0">
 							<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100">
-								<svg
-									class="h-5 w-5 text-blue-600"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-									></path>
-								</svg>
+								<BarChart3 class="h-5 w-5 text-blue-600" />
 							</div>
 						</div>
 						<div class="ml-4">
@@ -310,19 +290,7 @@
 					<div class="flex items-center">
 						<div class="flex-shrink-0">
 							<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-green-100">
-								<svg
-									class="h-5 w-5 text-green-600"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M4 6h16M4 10h16M4 14h16M4 18h16"
-									></path>
-								</svg>
+								<Columns class="h-5 w-5 text-green-600" />
 							</div>
 						</div>
 						<div class="ml-4">
@@ -337,25 +305,7 @@
 					<div class="flex items-center">
 						<div class="flex-shrink-0">
 							<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-100">
-								<svg
-									class="h-5 w-5 text-purple-600"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-									></path>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-									></path>
-								</svg>
+								<MapPin class="h-5 w-5 text-purple-600" />
 							</div>
 						</div>
 						<div class="ml-4">
@@ -398,19 +348,7 @@
 									{/each}
 								</select>
 								<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-									<svg
-										class="h-5 w-5 text-gray-400"
-										fill="none"
-										stroke="currentColor"
-										viewBox="0 0 24 24"
-									>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M19 9l-7 7-7-7"
-										></path>
-									</svg>
+									<ChevronDown class="h-5 w-5 text-gray-400" />
 								</div>
 							</div>
 						</div>
@@ -433,19 +371,7 @@
 									{/each}
 								</select>
 								<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-									<svg
-										class="h-5 w-5 text-gray-400"
-										fill="none"
-										stroke="currentColor"
-										viewBox="0 0 24 24"
-									>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M19 9l-7 7-7-7"
-										></path>
-									</svg>
+									<ChevronDown class="h-5 w-5 text-gray-400" />
 								</div>
 							</div>
 						</div>
@@ -458,19 +384,7 @@
 						>
 							<div class="mb-3 flex items-center">
 								<div class="mr-3 flex h-6 w-6 items-center justify-center rounded-full bg-blue-100">
-									<svg
-										class="h-4 w-4 text-blue-600"
-										fill="none"
-										stroke="currentColor"
-										viewBox="0 0 24 24"
-									>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-										></path>
-									</svg>
+									<Info class="h-4 w-4 text-blue-600" />
 								</div>
 								<h3 class="text-lg font-semibold text-blue-900">Current Selection</h3>
 							</div>
@@ -506,19 +420,7 @@
 								<div
 									class="mr-3 flex h-8 w-8 items-center justify-center rounded-full bg-green-100"
 								>
-									<svg
-										class="h-5 w-5 text-green-600"
-										fill="none"
-										stroke="currentColor"
-										viewBox="0 0 24 24"
-									>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-										></path>
-									</svg>
+									<CircleCheck class="h-5 w-5 text-green-600" />
 								</div>
 								<h3 class="text-xl font-bold text-green-900">Analysis Results</h3>
 							</div>
@@ -546,19 +448,7 @@
 								<div
 									class="mr-3 flex h-8 w-8 items-center justify-center rounded-full bg-yellow-100"
 								>
-									<svg
-										class="h-5 w-5 text-yellow-600"
-										fill="none"
-										stroke="currentColor"
-										viewBox="0 0 24 24"
-									>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
-										></path>
-									</svg>
+									<TriangleAlert class="h-5 w-5 text-yellow-600" />
 								</div>
 								<div>
 									<h3 class="text-lg font-semibold text-yellow-800">No Data Found</h3>
@@ -574,29 +464,11 @@
 					<!-- Map Section -->
 					{#if monitoringLocations.length > 0}
 						<div
-							class="mt-6 mb-6 rounded-xl border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 p-6 shadow-lg"
+							class="mt-6 mb-6 rounded-xl border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 p-6"
 						>
 							<div class="mb-4 flex items-center">
 								<div class="mr-3 flex h-8 w-8 items-center justify-center rounded-full bg-blue-100">
-									<svg
-										class="h-5 w-5 text-blue-600"
-										fill="none"
-										stroke="currentColor"
-										viewBox="0 0 24 24"
-									>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M17.657 16.657L12 22.314l-5.657-5.657a8 8 0 1111.314 0z"
-										/>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-										/>
-									</svg>
+									<Map class="h-5 w-5 text-blue-600" />
 								</div>
 								<h3 class="text-xl font-bold text-blue-900">Monitoring Locations Map</h3>
 							</div>
@@ -618,19 +490,7 @@
 					>
 						<div class="flex items-center">
 							<div class="mr-3 flex h-8 w-8 items-center justify-center rounded-full bg-yellow-100">
-								<svg
-									class="h-5 w-5 text-yellow-600"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
-									></path>
-								</svg>
+								<TriangleAlert class="h-5 w-5 text-yellow-600" />
 							</div>
 							<div>
 								<h3 class="text-lg font-semibold text-yellow-800">Missing Required Columns</h3>
